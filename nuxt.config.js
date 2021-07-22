@@ -8,14 +8,17 @@ export default {
   generate: {
     dir: 'docs'
   },
-
+  server: {
+    port: 8000, // default: 3000
+    host: '0.0.0.0' // default: localhost,
+  },
   router: {
-    base: process.env.NODE_ENV === 'development' ? '' : '/acasia-poster'
+    base: process.env.NODE_ENV === 'development' ? '' : '/'
   },
 
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
-    title: 'acasia-poster',
+    title: 'poster',
     htmlAttrs: {
       lang: 'en'
     },
