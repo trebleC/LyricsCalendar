@@ -3,7 +3,7 @@
 <!-- This is a poster generator for ApacheCon Asia 2021. [[Run]](http://zhangwenli.com/acasia-poster/) -->
 
 撻著廣東歌你可我可,自由DIY 
-<!-- [[Run]](http://zhangwenli.com/acasia-poster/) -->
+[[Run]](https://github.com/trebleC/qq-music-api)
 
 It provides a form to input the name, title and other information so that each speaker of the event can generate their own poster easily with auto-completion.
 

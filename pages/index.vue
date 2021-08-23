@@ -38,10 +38,10 @@
             class="topic"
             :style="{ 'font-size': 2.3 * topicFontSize + 'vh' }"
           >
-            {{ topic }}_{{ singer }}
+            {{ topic }}{{ topic && singer ? "_" : "" }}{{ singer }}
           </div>
           <div class="time">
-            <span>{{ melodist }}</span>
+            <span>{{ melodist ? "作曲_" + melodist : "" }}</span>
             <span>{{ time }}</span>
           </div>
           <img
@@ -74,14 +74,22 @@
         </el-form-item> -->
         <el-form-item label="来自哪首歌?">
           <!-- <el-checkbox v-model="isKeynote">主题演讲</el-checkbox> -->
-          <el-input v-model="topic" />
+          <!-- <el-input v-model="topic" /> -->
+          <el-autocomplete
+            style="width: 100%"
+            v-model="topic"
+            :fetch-suggestions="songQuery"
+            @select="songSelect"
+          ></el-autocomplete>
+          
         </el-form-item>
         <el-form-item label="歌词">
+          <span class="lyric-desc" @click="addBr">换行</span>
           <el-input type="textarea" v-model="title" />
         </el-form-item>
         <el-form-item label="填词" style="margin-top: 2vw">
           <el-autocomplete
-            style="width:100%"
+            style="width: 100%"
             v-model="name"
             :fetch-suggestions="nameQuery"
             @select="nameSelect"
@@ -151,7 +159,7 @@
             </a>
           </div>
         </el-form-item>
-        <el-form-item label="字号调整（from）">
+        <el-form-item label="字号调整（歌名）">
           <div :span="12">
             <a href="javascript:;" @click="topicFontAdd()">
               <i class="el-icon-zoom-in avatar-icon"></i>
@@ -170,14 +178,14 @@
         </el-form-item>
 
         <el-form-item class="info">
-          <i class="el-icon-loading"></i> 多谢靓女<a href="http://github.com/Ovilia">@Ovilia</a>的模板 设计版权<a
-            href="https://weibo.com/u/6675339465"
+          <i class="el-icon-loading"></i> 多谢靓女<a
+            href="http://github.com/Ovilia"
+            >@Ovilia</a
+          >的模板 设计版权<a href="https://weibo.com/u/6675339465"
             >@撻著廣東歌</a
           >所有 <a href="mailto:oviliazhang@gmail.com">问题反馈</a>
         </el-form-item>
-        <el-form-item class="info">
-          支持广东歌就系支持紧你自己！
-        </el-form-item>
+        <el-form-item class="info"> 支持广东歌就系支持紧你自己！ </el-form-item>
       </el-form>
     </el-col>
   </el-row>
@@ -288,22 +296,49 @@ export default Vue.extend({
     };
   },
 
-  mounted() {},
+  mounted() {
+    this.time = this.timeFormat('yyyy.MM.dd')
+  },
 
   methods: {
     trackQuery(str: string, cb: Function) {
+      
       const trackInfos = this.lang === "zh" ? trackZh : trackEn;
       const result = str
-        ? trackInfos.filter((info) => info.track === str)
+        ? trackInfos.filter((info) => info.track.includes(str))
         : trackInfos;
       const distinct = result
         .map((info) => info.track)
         .filter((track, index, self) => self.indexOf(track) === index);
       cb(
         distinct.map((track) => {
+          console.log(track)
           return { value: track };
         })
       );
+    },
+    songQuery(str: string, cb: Function) {
+      const trackInfos = this.lang === "zh" ? trackZh : trackEn;
+      const result = str
+        ? trackInfos.filter((info) => info.name === str)
+        : trackInfos.filter((info) => info.track === this.track);
+      cb(
+        result.map((track) => {
+          return {
+            value: track.name,
+            track,
+          };
+        })
+      );
+    },
+
+    songSelect(item: { track: SpeechInfo; value: string }) {
+      this.topic = item.track.topic;
+      this.time = item.track.time;
+      this.title = item.track.title;
+      this.isKeynote = item.track.isKeynote;
+      this.nameFontReset();
+      this.topicFontReset();
     },
 
     nameQuery(str: string, cb: Function) {
@@ -339,7 +374,7 @@ export default Vue.extend({
           this.isDownloading = false;
           const link = document.createElement("a");
           link.href = url;
-          link.download = this.name + ".jpeg";
+          link.download = this.topic + ".jpeg";
           link.click();
         });
     },
@@ -430,6 +465,32 @@ export default Vue.extend({
         (this.$refs.avatarInput as HTMLElement).click();
       }
     },
+    addBr(){
+      this.title += '<br>'
+    },
+    // @ts-ignore
+    timeFormat(fmt:any) {
+        // 对Date的扩展，将 Date 转化为指定格式的String
+        // 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符， 
+        // 年(y)可以用 1-4 个占位符，毫秒(S)只能用 1 个占位符(是 1-3 位的数字) 
+        // 例子： 
+        // (new Date()).Format("yyyy-MM-dd hh:mm:ss.S") ==> 2006-07-02 08:09:04.423 
+        // (new Date()).Format("yyyy-M-d h:m:s.S")      ==> 2006-7-2 8:9:4.18 
+        let date = new Date()
+        var o:any = {
+            "M+": date.getMonth() + 1, //月份 
+            "d+": date.getDate(), //日 
+            "h+": date.getHours(), //小时 
+            "m+": date.getMinutes(), //分 
+            "s+": date.getSeconds(), //秒 
+            "q+": Math.floor((date.getMonth() + 3) / 3), //季度 
+            "S": date.getMilliseconds() //毫秒 
+        };
+        if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
+        for (var k in o)
+        if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+        return fmt;
+    },
 
     // @ts-ignore
     avatarChange(event) {
@@ -444,8 +505,8 @@ export default Vue.extend({
         img.onload = () => {
           const h = (417 * 100) / 2208;
           const w = (h / img.height) * img.width;
-          const top = (373 / 2208) * 100;
-          const pw = (100 / 2208) * 1242;
+          const top = (1200 / 2208) * 100;
+          const pw = (60 / 2208) * 1242;
           const left = (pw - w) / 2;
           this.avatarDefaultPos.width = this.avatarPos.width = w;
           this.avatarDefaultPos.height = this.avatarPos.height = h;
@@ -630,5 +691,10 @@ a:hover .avatar-icon {
 .info,
 .info a {
   color: #aaa;
+}
+.lyric-desc{
+  font-size: 12px;
+  color: #aaa;
+  cursor: pointer;
 }
 </style>
