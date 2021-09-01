@@ -20,23 +20,22 @@
             top: avatarPos.top + 'vh',
           }"
         />
-        <div class="bg"></div>
         <img
           class="poster-template"
-          :src="'poster-template-' + lang + '.png'"
+          :src="`poster-template${imageUrl?'-nosign':''}.png`"
         />
         <div class="poster-content">
           <div
             class="title"
-            :style="{ 'font-size': 3.7 * titleFontSize + 'vh' }"
+            :style="{ 'font-size': 3.7 * titleFontSize + 'vh','color':fontColors[fontColorIdx]}"
             v-html="'“ ' + title + ' ”'"
           ></div>
-          <div class="name" :style="{ 'font-size': 3.7 * nameFontSize + 'vh' }">
+          <div class="name" :style="{ 'font-size': 3.7 * nameFontSize + 'vh','color':fontColors[fontColorIdx] }">
             {{ name }}
           </div>
           <div
             class="topic"
-            :style="{ 'font-size': 2.3 * topicFontSize + 'vh' }"
+            :style="{ 'font-size': 2.3 * topicFontSize + 'vh','color':fontColors[fontColorIdx] }"
           >
             {{ topic }}{{ topic && singer ? "_" : "" }}{{ singer }}
           </div>
@@ -44,11 +43,6 @@
             <span>{{ melodist ? "作曲_" + melodist : "" }}</span>
             <span>{{ time }}</span>
           </div>
-          <img
-            class="keynote"
-            :src="'keynote-' + lang + '.png'"
-            v-if="isKeynote"
-          />
         </div>
       </div>
     </el-col>
@@ -74,7 +68,6 @@
         </el-form-item> -->
         <el-form-item label="来自哪首歌?">
           <!-- <el-checkbox v-model="isKeynote">主题演讲</el-checkbox> -->
-          <!-- <el-input v-model="topic" /> -->
           <el-autocomplete
             style="width: 100%"
             v-model="topic"
@@ -128,13 +121,16 @@
             <a href="javascript:;" @click="zoomReset()">
               <i class="el-icon-refresh-left avatar-icon" v-if="imageUrl"></i>
             </a>
+            <a href="javascript:;" @click="zoomDestroy()">
+              <i class="el-icon-circle-close avatar-icon" v-if="imageUrl"></i>
+            </a>
           </el-col>
         </el-form-item>
         <!-- <el-form-item label="发布时间">
           <el-input v-model="time" />
         </el-form-item> -->
         <el-form-item label="字号调整（歌词）">
-          <div :span="12">
+          <el-col  :span="8">
             <a href="javascript:;" @click="titleFontAdd()">
               <i class="el-icon-zoom-in avatar-icon"></i>
             </a>
@@ -144,7 +140,14 @@
             <a href="javascript:;" @click="titleFontReset()">
               <i class="el-icon-refresh-left avatar-icon"></i>
             </a>
-          </div>
+          </el-col >
+          <el-col  :span="8">
+            <label class="el-form-item__label">字体颜色</label>
+            <a href="javascript:;" @click="fontColorReset()">
+              <i class="el-icon-refresh avatar-icon"></i>
+            </a>
+            <el-color-picker style="position:relative;top:5px;" v-if="selectColor" v-model="selectColor" @change="changeFontColor" size="mini"></el-color-picker>
+          </el-col >
         </el-form-item>
         <el-form-item label="字号调整（填词）">
           <div :span="12">
@@ -197,7 +200,6 @@ import Vue from "vue";
 import domtoimage from "retina-dom-to-image";
 import trackZhRaw from "./data/track-zh";
 import trackEnRaw from "./data/track-en";
-import trackKeyRaw from "./data/track-keynote";
 
 type SpeechInfo = {
   track: string;
@@ -205,13 +207,7 @@ type SpeechInfo = {
   name: string;
   topic: string;
   time: string;
-  isKeynote: boolean;
 };
-
-const trackKey = trackKeyRaw
-  .split("\n")
-  .slice(2)
-  .filter((line) => !!line);
 
 function getTrackInfo(raw: string, isZh: boolean): SpeechInfo[] {
   let infos = raw
@@ -226,28 +222,9 @@ function getTrackInfo(raw: string, isZh: boolean): SpeechInfo[] {
         name: arr[1],
         topic: arr[3],
         time: arr[5],
-        isKeynote: false,
       };
     });
 
-  // add keynote
-  infos = infos.concat(
-    trackKey
-      .filter((line) => {
-        return isZh === /[\u4e00-\u9fa5]/.test(line);
-      })
-      .map((line) => {
-        const arr = line.split(",");
-        return {
-          track: arr[0],
-          title: arr[2],
-          name: arr[1],
-          topic: arr[3],
-          time: arr[4],
-          isKeynote: true,
-        };
-      })
-  );
 
   return infos;
 }
@@ -266,12 +243,15 @@ export default Vue.extend({
       time: "",
       melodist: "",
       singer: "",
-      isKeynote: false,
       avatarInput: null,
 
       titleFontSize: 1,
       nameFontSize: 1,
       topicFontSize: 1,
+
+      fontColors:['#ffe342','#38809C'],
+      fontColorIdx:0,
+      selectColor:'',
 
       avatarDefaultPos: {
         width: 0,
@@ -336,7 +316,6 @@ export default Vue.extend({
       this.topic = item.track.topic;
       this.time = item.track.time;
       this.title = item.track.title;
-      this.isKeynote = item.track.isKeynote;
       this.nameFontReset();
       this.topicFontReset();
     },
@@ -360,7 +339,6 @@ export default Vue.extend({
       this.topic = item.track.topic;
       this.time = item.track.time;
       this.title = item.track.title;
-      this.isKeynote = item.track.isKeynote;
       this.nameFontReset();
       this.topicFontReset();
     },
@@ -424,6 +402,10 @@ export default Vue.extend({
       this.avatarPos.top = this.avatarDefaultPos.top;
     },
 
+    zoomDestroy(){
+      this.imageUrl = ''
+    },
+
     titleFontAdd() {
       this.titleFontSize += 0.1;
     },
@@ -434,6 +416,19 @@ export default Vue.extend({
 
     titleFontReset() {
       this.titleFontSize = 1;
+    },
+    
+    fontColorReset() {
+      console.log(this.fontColorIdx)
+      this.fontColorIdx ++
+      this.fontColorIdx = this.fontColorIdx > this.fontColors.length-1? 0 :this.fontColorIdx
+      this.selectColor = this.fontColors[this.fontColorIdx]
+    },
+
+    changeFontColor(val:any){
+      this.fontColors.push(val)
+      this.fontColorIdx = this.fontColors.length-1
+      this.selectColor = val
     },
 
     nameFontAdd() {
@@ -564,16 +559,6 @@ h1 {
   user-select: none;
 }
 
-.bg {
-  position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  background: white;
-  z-index: -20;
-}
-
 .poster-template {
   height: 100vh;
 }
@@ -622,22 +607,18 @@ h1 {
   text-align: right;
   height: 4.5vh;
   margin-top: 3vh;
+  color: #ffe342;
+  font-family: "SourceHanSerifSC", "Open Sans";
 }
 
 .time {
   font-size: 2vh;
-  color: #ccc;
+  color: #82666C;
   margin-top: 1vh;
   display: flex;
   justify-content: space-between;
   padding: 0 5vh 0 6vh;
   box-sizing: border-box;
-}
-
-.keynote {
-  display: block;
-  margin: 0.5vh auto;
-  height: 5vh;
 }
 
 .el-form-item {
